@@ -1,9 +1,12 @@
 package com.example.coinflip
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.SyncStateContract.Helpers.update
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.widget.SwitchCompat
 import kotlin.math.round
@@ -20,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tailsPercent: TextView
     private lateinit var tailsProgressBar: ProgressBar
     private lateinit var simNumber: EditText
+    private lateinit var simButton: Button
 
     //Counter variables to keep track of heads, tails, and total flips
     private var heads = 0
@@ -34,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         val simSwitch: SwitchCompat = findViewById(R.id.main_sw_simulate)
         val flipButton: Button = findViewById(R.id.main_bt_flip)
         val resetButton: Button = findViewById(R.id.main_bt_reset)
-        val simButton: Button = findViewById(R.id.main_bt_simulate)
+        simButton = findViewById(R.id.main_bt_simulate)
 
         //Set listeners for our buttons
         simSwitch.setOnCheckedChangeListener { buttonView, isChecked -> enableSim(isChecked) }
@@ -56,7 +60,13 @@ class MainActivity : AppCompatActivity() {
 
     //Turn on/off simulation mode
     private fun enableSim(onState: Boolean){
-
+        if(onState){
+            simNumber.visibility = View.VISIBLE
+            simButton.visibility = View.VISIBLE
+        } else{
+            simNumber.visibility = View.INVISIBLE
+            simButton.visibility = View.INVISIBLE
+        }
     }
 
     //Simulate a single coin flip
@@ -96,8 +106,13 @@ class MainActivity : AppCompatActivity() {
 
     //Update the statistics UI based on the previous coin flip
     private fun updateStatistics(){
-        val headsPercentResult = round((heads.toDouble()/total.toDouble()) * 100)
-        val tailsPercentResult = round((tails.toDouble()/total.toDouble()) * 100)
+        var headsPercentResult = 0.0
+        var tailsPercentResult = 0.0
+
+        if(total != 0) {
+            headsPercentResult = round((heads.toDouble() / total.toDouble()) * 10000)/100
+            tailsPercentResult = round((tails.toDouble() / total.toDouble()) * 10000)/100
+        }
 
         //update textviews for percentages
         headsPercent.text = "Heads: $headsPercentResult%"
@@ -110,11 +125,46 @@ class MainActivity : AppCompatActivity() {
 
     //Reset all data for the simulation
     private fun reset(){
+        //Update the image
+        coinImage.setImageResource(R.drawable.ic_flip_icon)
 
+        //Update counts
+        total = 0
+        heads = 0
+        tails = 0
+
+        //Update textviews
+        totalCount.text = "Total Flips: $total"
+        headsCount.text = "Total Heads: $heads"
+        tailsCount.text = "Total Tails: $tails"
+
+        //Update statistics UI
+        updateStatistics()
     }
 
     //Run the coin simulation for a set number of flips
     private fun sim(){
+        //Get number to sim and clear editText
+        var numberToSim = 1
 
+        if(simNumber.text.toString() != ""){
+            numberToSim = simNumber.text.toString().toInt()
+        }
+
+        simNumber.setText("")
+
+        //Run the proper number of flips for the simulation
+        for(i in 1..numberToSim){
+            flip()
+        }
+
+        //Hide the keyboard
+        hideKeyboard()
+    }
+
+    //Hide the keyboard
+    private fun hideKeyboard(){
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(coinImage.windowToken, 0)
     }
 }
